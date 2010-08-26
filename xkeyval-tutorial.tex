@@ -1,0 +1,75 @@
+\documentclass{scrartcl}
+\usepackage[utf8x]{inputenc}
+\usepackage[italian]{babel}
+\usepackage[T1]{fontenc}
+
+\usepackage{color}
+%\usepackage{hyperref}
+
+\usepackage{listings}
+%\usepackage{amsmath}
+\lstset{language=[LaTeX]TeX,
+            basicstyle=\ttfamily,
+            keywordstyle=\color{cyan},
+            escapeinside={^|}{|^}
+}
+
+\newcommand{\meta}[1]{$\langle$\textit{#1}$\rangle$}
+
+\begin{document}
+\title{Opzioni di pacchetto e di classe con xkeyval}
+\subtitle{Un semplice tutorial con casi d'uso illustrati}
+\author{Carlo~Stemberger}
+\publishers{ver.~0.0}
+\maketitle
+
+\begin{abstract}
+\noindent Questa guida è un semplice tutorial scritto per aiutare chi inizia a programmare in \LaTeX\ a predisporre opzioni di classe e di pacchetto usando xkeyval. Al di là del proclama ufficiale, lo scopo ultimo di questo lavoro è in realtà quello di mettere ordine tra le idee dell'autore.
+\end{abstract}
+
+\section{Le opzioni di pacchetto e di classe}
+Quando si scrive una classe o un pacchetto \LaTeX, è quasi sempre necessario prevedere delle \emph{opzioni}, ovvero dei comportamenti alternativi che l'utente attiverà a seconda delle proprie esigenze.
+
+\LaTeX\ offre nativamente questa possibilità. Vediamo subito un primo esempio per capire di cosa parliamo.
+\begin{lstlisting}
+\usepackage[pluto]{pippo}
+\end{lstlisting}
+Chiunque abbia usato almeno una volta \LaTeX\ avrà senz'altro visto questo tipo di sintassi nel preambolo dei propri documenti. Ma cosa succede dietro le quinte, quando si carica un pacchetto in questo modo? In breve:
+\begin{enumerate}
+\item vengono inglobati nel preambolo del documento i comandi e gli ambienti presenti in un file di nome \lstinline+pippo.sty+, per renderli disponibili all'utente;
+\item viene seguita la logica attivata dall'opzione \lstinline+pluto+.
+\end{enumerate}
+Ecco come potrebbe presentarsi lo scheletro del pacchetto \lstinline+pippo.sty+, usando esclusivamente gli strumenti offerti da \LaTeX:
+\begin{lstlisting}
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{pippo}
+
+\DeclareOption{pluto}{^|\meta{codice}|^}
+\ProcessOptions\relax
+\end{lstlisting}
+dove \meta{codice} sono quelle macro che vengono lanciate nel caso in cui l'utente scelga l'opzione \lstinline+pluto+ al momento di richiamare il pacchetto.
+
+\section{Le opzioni con xkeyval}
+Come si può vedere, fin qui è tutto molto semplice. Per chi è abituato a ragionare in termini di algoritmi, si tratta in buona sostanza della struttura di controllo if--then: \emph{se} l'opzione \lstinline+pluto+ è presente, \emph{allora} fai questo. Ovviamente se l'opzione non viene inserita, non viene fatto niente di particolare.
+
+Tante cose possono essere fatte in questo modo, ma spesso non basta. Il limite maggiore è proprio l'impossibilità di \emph{modulare} l'opzione, ovvero di assegnarle dei valori.  Usando gli strumenti nativi di \LaTeX\ l'opzione può solo o esserci, o non esserci.
+
+Il pacchetto xkeyval permette di superare questo limite, offrendo la possibilità di inserire delle opzioni di tipo chiave--valore (key--value, in inglese). La sintassi è in buona parte retro-compatibile con quella che abbiamo presentato in precedenza. Vediamo subito lo stesso esempio usando xkeyval:
+\begin{lstlisting}
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{pippo}
+
+\RequirePackage{xkeyval}
+
+\DeclareOptionX{pluto}{^|\meta{codice}|^}
+\ProcessOptionsX
+\end{lstlisting}
+
+Con xkeyval, alle 2 possibilità ``tradizionali'' offerte all'utente della classe o pacchetto che stiamo scrivendo ne viene aggiunta una terza. Infatti ora l'opzione può:
+\begin{enumerate}
+\item non esserci
+\item essere semplicemente presente
+\item essere presente nella forma chiave--valore
+\end{enumerate}
+È facile intuire quanto sia l'incremento di potenza.
+\end{document}
