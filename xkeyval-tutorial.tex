@@ -11,7 +11,8 @@
 \lstset{language=[LaTeX]TeX,
             basicstyle=\ttfamily,
             keywordstyle=\color{cyan},
-            escapeinside={^|}{|^}
+            escapeinside={^|}{|^},
+            numbers=left
 }
 
 \newcommand{\meta}[1]{$\langle$\textit{#1}$\rangle$}
@@ -47,7 +48,7 @@ Ecco come potrebbe presentarsi lo scheletro del pacchetto \lstinline+pippo.sty+,
 \DeclareOption{pluto}{^|\meta{codice}|^}
 \ProcessOptions\relax
 \end{lstlisting}
-dove \meta{codice} sono quelle macro che vengono lanciate nel caso in cui l'utente scelga l'opzione \lstinline+pluto+ al momento di richiamare il pacchetto.
+dove \meta{codice} sono quelle macro che vengono lanciate nel caso in cui l'utente richiami il pacchetto con l'opzione \lstinline+pluto+.
 
 \section{Le opzioni con xkeyval}
 Come si può vedere, fin qui è tutto molto semplice. Per chi è abituato a ragionare in termini di algoritmi, si tratta in buona sostanza della struttura di controllo if--then: \emph{se} l'opzione \lstinline+pluto+ è presente, \emph{allora} fai questo. Ovviamente se l'opzione non viene inserita, non viene fatto niente di particolare.
@@ -71,5 +72,74 @@ Con xkeyval, alle 2 possibilità ``tradizionali'' offerte all'utente della class
 \item essere semplicemente presente
 \item essere presente nella forma chiave--valore
 \end{enumerate}
-È facile intuire quanto sia l'incremento di potenza.
+
+È facile intuire quanto sia l'incremento di potenza. Ecco qui di seguito una breve descrizione dei diversi aspetti.
+\begin{description}
+\item[Ordine e chiarezza.] Il primo motivo per preferire in alcuni casi opzioni di tipo chiave--valore è la chiarezza: si vedano a tal proposito gli esempi presentati nelle sezioni \ref{sec:gruppo} e [\dots].
+\item[Gestione di infiniti valori.] [\dots]
+\end{description}
+
+\section{Gruppo limitato di valori}
+\label{sec:gruppo}
+Spesso capita di voler lasciare agli utenti la scelta tra un numero limitato di valori. Ecco un esempio reale, tratto dalla classe missa.
+\begin{lstlisting}
+\RequirePackage{color}
+
+\definecolor{DartmouthGreen}{rgb}{0,0.4392,0.2353}
+\definecolor{Violet}{rgb}{0.498,0,1}
+\definecolor{ClassicRose}{rgb}{0.9843,0.8,0.9059}
+
+\newcommand{\missa@litcolor}{DartmouthGreen}
+
+\define@choicekey+{missa.cls}{litcolor}[\val\nr]{%
+green,violet,white,red,rose,black}[green]{%
+  \ifcase\nr\relax
+    \renewcommand{\missa@litcolor}{DartmouthGreen}
+  \or
+    \renewcommand{\missa@litcolor}{Violet}
+  \or
+    \renewcommand{\missa@litcolor}{#1}
+  \or
+    \renewcommand{\missa@litcolor}{#1}
+  \or
+    \renewcommand{\missa@litcolor}{ClassicRose}
+  \or
+    \renewcommand{\missa@litcolor}{#1}
+  \fi
+}{%
+  \ClassWarning{missa}{erroneous input ignored}%
+}
+\ProcessOptionsX
+\end{lstlisting}
+
+L'opzione \lstinline+litcolor+ permette di impostare il colore liturgico, che poi sarà utilizzato dalla classe.
+
+Il suo uso è del tutto evidente:
+\begin{lstlisting}
+\documentclass[litcolor=^|\meta{colore}|^]{missa}
+\end{lstlisting}
+
+I colori possibili sono 6: green (verde), violet (violaceo), white (bianco), red (rosso), rose (rosaceo) e black (nero). 3 di questi (bianco, rosso e nero) sono già definiti dal pacchetto color, e sono quindi già pronti per essere usati senza dover scrivere una sola riga di codice, mentre per gli altri è stato necessario impostarli dichiarando le diverse tonalità tramite i valori assegnati ai canali RGB (righe 3--5).
+
+Alla riga 7 semplicemente viene definito un nuovo comando che ha come unico scopo quello di conservare il colore liturgico scelto dall'utente: il valore preimpostato è \lstinline+DartmouthGreen+, che è la tinta di verde precedentemente definita alla riga 3.
+
+Le righe 9--26 meritano un'analisi dettagliata.
+
+Innanzitutto appare subito evidente che la definizione dell'opzione avviene in modo diverso da quanto finora visto. Ecco la spiegazione. Il comando \lstinline+\DeclareOptionX+ è previsto dal xkeyval proprio per agevolare la migrazione dagli strumenti nativi di \LaTeX\ che, come abbiamo visto, hanno una sintassi molto simile. In realtà è possibile sostituire \lstinline+\DeclareOptionX+ con \lstinline+\define@key{missa.cls}+, dove \lstinline+missa.cls+ è il file della classe in oggetto. Tutto ciò che viene dopo non cambia.
+
+\lstinline+\define@key+ è il modo ``normale'' per definire le chiavi usando xkeyval, al di là delle opzioni di pacchetto e di classe. xkeyval offre però anche altri strumenti. In questo caso è stato scelto il comando \lstinline+\define@choicekey+, il quale si usa per definire chiavi che permettono all'utente di inserire uno tra i valori previsti nella definizione, che sono quindi in numero limitato.
+
+Subito dopo l'elenco dei valori ammissibili, tra parentesi quadre è inserito il valore di default, che viene selezionato quando la chiave viene richiamata senza valore.
+
+L'altro argomento tra parentesi quadre è un parametro opzionale previsto dal comando \lstinline+\define@choicekey+; raccoglie, nella prima macro (\lstinline+\val+) l'input dell'utente, e nella seconda (\lstinline+\nr+) il numero corrispondente, partendo da 0 nella conta tra i valori disponibili. Solo la seconda macro viene usata, a partire dalla riga 11, dal comando \TeX\ \lstinline+\ifcase+: nel caso in cui l'utente abbia scelto il valore numero 0 (green), verrà assegnata alla macro \lstinline+\missa@litcolor+ la tinta DartmouthGreen; nel caso del valore numero 1 (violet), la tinta Violet; e così via.
+
+Infine la riga 25 è un secondo comando reso disponibile dalla variante ``+'' del comando \lstinline+\define@choicekey+ (\lstinline|\define@choicekey+|) che viene eseguito al posto del primo nel caso in cui l'utente scelga un valore non compreso tra quelli previsti: in questo caso il compilatore emetterà un avviso, invece di bloccare l'esecuzione.
+
+Riassumendo, ecco i diversi scenari possibili:
+\begin{enumerate}
+\item l'utente non sceglie l'opzione litcolor quando richiama la classe: il colore liturgico sarà impostato automaticamente come verde (riga 7);
+\item l'utente inserisce l'opzione solo come chiave, senza assegnare un valore: il colore sarà sempre il verde, dato che il valore di default alla riga 10 è questo;
+\item l'utente inserisce un valore non compreso tra quelli dell'elenco alla riga 10: il compilatore segnalerà il problema (riga 25), ignorerà il valore inserito e lo sostituirà di conseguenza con quello di default, ricadendo nel caso illustrato al punto precedente;
+\item l'utente sceglie una coppia chiave--valore corretta, ad esempio \lstinline+litcolor=red+: alla macro \lstinline+\missa@litcolor+ verrà assegnato il valore ``red'' (riga 18), e quindi il colore liturgico sarà il rosso.
+\end{enumerate}
 \end{document}
